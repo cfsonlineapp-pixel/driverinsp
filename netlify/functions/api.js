@@ -182,14 +182,15 @@ const actions = {
     const driverid = str(data.driverid, 'Driver ID', 4);
     if (!/^\d{4}$/.test(driverid)) throw new HttpError(400, 'Driver ID mora imati tačno 4 cifre.');
 
+    // Dovoljno je da se poklopi ime ILI prezime + tačan ID.
+    // U izveštaj se upisuje puno ime iz lista Drivers.
     const nameWords = normalizeName(name);
-    if (nameWords.length < 2) return { valid: false };
 
     const d = await sheets(`values/${range(cfg.driversTab(), 'A2:B')}`);
     const match = (d.values || []).find(row => {
       if (!row[0] || !row[1]) return false;
       const sheetWords = normalizeName(row[0]);
-      return String(row[1]).trim() === driverid && nameWords.every(w => sheetWords.includes(w));
+      return String(row[1]).trim() === driverid && nameWords.some(w => sheetWords.includes(w));
     });
     if (!match) return { valid: false };
 

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Vehicle Inspection</title>
+<style>
+  :root {
+    --black: #0f0f0f;
+    --white: #f5f4f0;
+    --yellow: #f5c842;
+    --gray: #2a2a2a;
+    --light-gray: #3d3d3d;
+    --text-muted: #888;
+    --danger: #e85d3a;
+    --success: #4caf50;
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  img { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--black); color: var(--white); font-family: var(--font); min-height: 100vh; }
+  .header { background: var(--gray); border-bottom: 3px solid var(--yellow); padding: 18px 20px; display: flex; align-items: center; gap: 12px; }
+  .header-icon { font-size: 28px; }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+  .header p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .form-container { padding: 24px 20px; max-width: 500px; margin: 0 auto; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--yellow); text-transform: uppercase; margin-bottom: 14px; margin-top: 28px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--light-gray); }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+  .field input, .field textarea { width: 100%; background: var(--gray); border: 1.5px solid var(--light-gray); color: var(--white); font-size: 16px; padding: 13px 14px; border-radius: var(--radius); outline: none; transition: border-color .2s; font-family: var(--font); }
+  .field textarea { min-height: 100px; resize: vertical; }
+  .field input:focus, .field textarea:focus { border-color: var(--yellow); }
+  .field input::placeholder, .field textarea::placeholder { color: #555; }
+  .photo-group { margin-bottom: 24px; }
+  .photo-add-btn { width: 100%; background: var(--gray); border: 2px dashed var(--light-gray); color: var(--text-muted); font-size: 14px; padding: 16px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
+  .photo-add-btn:hover, .photo-add-btn:active { border-color: var(--yellow); color: var(--yellow); }
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.7); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .submit-btn { width: 100%; background: var(--yellow); color: var(--black); border: none; font-size: 16px; font-weight: 700; padding: 16px; border-radius: var(--radius); cursor: pointer; margin-top: 10px; letter-spacing: .5px; transition: opacity .2s; }
+  .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .submit-btn:active:not(:disabled) { opacity: .85; }
+  .status-msg { text-align: center; padding: 14px; border-radius: var(--radius); margin-top: 16px; font-size: 14px; font-weight: 600; display: none; }
+  .status-msg.success { background: rgba(76,175,80,.15); color: var(--success); border: 1px solid var(--success); display: block; }
+  .status-msg.error { background: rgba(232,93,58,.15); color: var(--danger); border: 1px solid var(--danger); display: block; }
+  .status-msg.loading { background: rgba(245,200,66,.1); color: var(--yellow); border: 1px solid var(--yellow); display: block; }
+  .login-container { max-width: 360px; margin: 60px auto; padding: 32px 24px; background: var(--gray); border-radius: 14px; border: 1px solid var(--light-gray); }
+  .login-container h2 { font-size: 20px; margin-bottom: 6px; }
+  .login-container p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+  .admin-container { padding: 20px; }
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .admin-header h2 { font-size: 20px; }
+  .logout-btn { background: var(--gray); border: 1px solid var(--light-gray); color: var(--text-muted); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .refresh-btn { background: var(--yellow); color: var(--black); border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
+  .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--gray); border-radius: var(--radius); padding: 16px; border-left: 3px solid var(--yellow); }
+  .stat-card .num { font-size: 28px; font-weight: 700; color: var(--yellow); }
+  .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .toolbar input, .toolbar select { background: var(--gray); border: 1.5px solid var(--light-gray); color: var(--white); font-size: 14px; padding: 10px 14px; border-radius: 10px; outline: none; }
+  .toolbar input { flex: 1; min-width: 200px; }
+  .toolbar select { cursor: pointer; }
+  .pagination { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #pagination-top { margin-bottom: 12px; }
+  #pagination-bottom { margin-top: 16px; }
+  .records-list { display: flex; flex-direction: column; gap: 14px; }
+  .record-card { background: var(--gray); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--light-gray); }
+  .record-header { padding: 14px 16px; border-bottom: 1px solid var(--light-gray); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .record-name { font-size: 16px; font-weight: 600; }
+  .record-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .record-fields { padding: 12px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .record-field .lbl { font-size: 11px; color: var(--text-muted); }
+  .record-field .val { font-size: 14px; font-weight: 500; margin-top: 2px; word-break: break-word; }
+  .record-photos { padding: 0 16px 14px; }
+  .photos-label { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+  .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
+  .photo-strip img { height: 80px; width: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; cursor: pointer; outline: none; }
+  .driver-notes { margin: 0 16px 14px; padding: 10px 12px; background: var(--black); border-left: 3px solid var(--yellow); border-radius: 6px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+  .driver-notes .lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .comment-section { padding: 12px 16px 14px; border-top: 1px solid var(--light-gray); }
+  .comment-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .comment-box { width: 100%; background: var(--black); border: 1.5px solid var(--light-gray); color: var(--white); font-size: 14px; padding: 10px 12px; border-radius: 8px; outline: none; resize: vertical; min-height: 70px; font-family: var(--font); transition: border-color .2s; }
+  .comment-box:focus { border-color: var(--yellow); }
+  .comment-save-btn { background: var(--yellow); color: var(--black); border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .comment-save-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .comment-saved { font-size: 12px; color: var(--success); margin-left: 8px; display: none; }
+  .no-records { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 15px; }
+  .page-btn { background: var(--gray); border: 1px solid var(--light-gray); color: var(--white); padding: 7px 13px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: background .2s; }
+  .page-btn:hover { background: var(--light-gray); }
+  .page-btn.active { background: var(--yellow); color: var(--black); font-weight: 700; border-color: var(--yellow); }
+  .page-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .page-info { font-size: 13px; color: var(--text-muted); padding: 7px 4px; }
+  .camera-modal { display: none; position: fixed; inset: 0; background: #000; z-index: 2000; }
+  .camera-modal.open { display: block; }
+  .camera-inner { position: relative; width: 100%; height: 100%; }
+  #camera-video { width: 100%; height: 100%; object-fit: cover; background: #000; display: block; }
+  .cam-cancel-btn, .cam-flip-btn { position: absolute; top: 20px; background: rgba(0,0,0,.65); color: white; border: 2px solid rgba(255,255,255,.5); font-size: 15px; font-weight: 600; padding: 10px 20px; border-radius: 50px; cursor: pointer; z-index: 10; }
+  .cam-cancel-btn { left: 16px; }
+  .cam-flip-btn { right: 16px; }
+  .cam-snap-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 120px); background: var(--yellow); color: var(--black); border: none; font-size: 18px; font-weight: 700; padding: 20px 52px; border-radius: 50px; cursor: pointer; z-index: 10; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,.6); }
+  .cam-snap-btn:active { opacity: .85; }
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 90%; max-height: 85vh; border-radius: 8px; }
+  .lightbox-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: white; font-size: 30px; cursor: pointer; }
+  .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.6); border: none; color: white; font-size: 32px; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  #lightbox-prev { left: 16px; }
+  #lightbox-next { right: 16px; }
+  #lightbox-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; background: rgba(0,0,0,.5); padding: 4px 12px; border-radius: 20px; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(0,0,0,.3); border-top-color: var(--black); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🚛</div>
+  <div>
+    <h1>Vehicle Inspection</h1>
+    <p id="header-sub">Submit truck &amp; trailer condition report</p>
+  </div>
+</div>
+
+<div id="page-form" class="page active">
+  <div class="form-container">
+    <div class="section-label">Driver</div>
+    <div class="field">
+      <label for="f-name">Full Name * (first and last name)</label>
+      <input type="text" id="f-name" placeholder="e.g. John Smith" autocomplete="name" maxlength="100">
+    </div>
+    <div class="field">
+      <label for="f-driverid">Driver ID * (last 4 digits of your phone)</label>
+      <input type="text" id="f-driverid" inputmode="numeric" placeholder="e.g. 1234" autocomplete="off" maxlength="4">
+    </div>
+    <div class="section-label">Vehicle</div>
+    <div class="field">
+      <label for="f-truck">Truck Number *</label>
+      <input type="text" id="f-truck" placeholder="e.g. T-1042" autocomplete="off" maxlength="40">
+    </div>
+    <div class="field">
+      <label for="f-trailer">Trailer Number *</label>
+      <input type="text" id="f-trailer" placeholder="e.g. TR-2085" autocomplete="off" maxlength="40">
+    </div>
+    <div class="section-label">Truck Photos</div>
+    <div class="photo-group">
+      <div class="photo-grid" id="truck-grid"></div>
+      <button class="photo-add-btn" onclick="openCamera('truck')"><span>📷</span> Take truck photo</button>
+    </div>
+    <div class="section-label">Trailer Photos</div>
+    <div class="photo-group">
+      <div class="photo-grid" id="trailer-grid"></div>
+      <button class="photo-add-btn" onclick="openCamera('trailer')"><span>📷</span> Take trailer photo</button>
+    </div>
+    <div class="section-label">Notes</div>
+    <div class="field">
+      <label for="f-notes">Additional Notes (optional)</label>
+      <textarea id="f-notes" placeholder="Any issues or comments..." maxlength="2000"></textarea>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitForm()">Submit Report</button>
+    <div class="status-msg" id="status-msg"></div>
+    <div style="height:40px"></div>
+  </div>
+</div>
+
+<div id="page-login" class="page">
+  <div class="login-container">
+    <h2>🔐 Admin Panel</h2>
+    <p>Enter password to access reports</p>
+    <div class="field">
+      <label for="admin-pass">Password</label>
+      <input type="password" id="admin-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+    <button class="submit-btn" id="login-btn" onclick="adminLogin()">Log In</button>
+    <div class="status-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<div id="page-admin" class="page">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h2>📋 All Reports</h2>
+      <div style="display:flex;gap:8px">
+        <button class="refresh-btn" onclick="loadRecords()">⟳ Refresh</button>
+        <button class="logout-btn" onclick="adminLogout()">Log Out</button>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="num" id="stat-total">—</div><div class="lbl">Total Reports</div></div>
+      <div class="stat-card"><div class="num" id="stat-today">—</div><div class="lbl">Today</div></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search-input" placeholder="🔍 Search by name, truck, trailer, driver ID..." oninput="currentPage = 1; filterAndRender()">
+      <select id="per-page" onchange="currentPage = 1; filterAndRender()">
+        <option value="10">10 per page</option>
+        <option value="25">25 per page</option>
+        <option value="50">50 per page</option>
+        <option value="100">100 per page</option>
+      </select>
+    </div>
+    <div id="pagination-top" class="pagination"></div>
+    <div class="records-list" id="records-list"><div class="no-records">Loading...</div></div>
+    <div id="pagination-bottom" class="pagination"></div>
+  </div>
+</div>
+
+<div class="camera-modal" id="camera-modal">
+  <div class="camera-inner">
+    <video id="camera-video" autoplay playsinline muted></video>
+    <canvas id="camera-canvas" style="display:none"></canvas>
+    <button class="cam-cancel-btn" onclick="closeCamera()">✕ Cancel</button>
+    <button class="cam-flip-btn" onclick="flipCamera()">🔄 Flip</button>
+    <button class="cam-snap-btn" onclick="snapPhoto()">📷 Capture</button>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-nav" id="lightbox-prev" onclick="lightboxNav(-1)">‹</button>
+  <img id="lightbox-img" src="" alt="">
+  <button class="lightbox-nav" id="lightbox-next" onclick="lightboxNav(1)">›</button>
+  <div id="lightbox-counter"></div>
+</div>
+
+<script>
+const API = '/.netlify/functions/api';
+const ADMIN_TOKEN_KEY = 'vi_admin_token';
+
+// ─── HELPERS ──────────────────────────────────────────────
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+class ApiError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+
+async function callApi(action, data, token) {
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data, token })
+  });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch (e) { throw new ApiError(res.status, 'Server error (' + res.status + ')'); }
+  if (!res.ok || json.error) throw new ApiError(res.status, json.error || ('Server error (' + res.status + ')'));
+  return json;
+}
+
+function getAdminToken() { try { return sessionStorage.getItem(ADMIN_TOKEN_KEY); } catch (e) { return window._adminToken || null; } }
+function setAdminToken(t) {
+  window._adminToken = t;
+  try { t ? sessionStorage.setItem(ADMIN_TOKEN_KEY, t) : sessionStorage.removeItem(ADMIN_TOKEN_KEY); } catch (e) {}
+}
+
+// ─── CAMERA ───────────────────────────────────────────────
+const photos = { truck: [], trailer: [] };
+let currentCameraType = null;
+let cameraStream = null;
+let facingMode = 'environment';
+
+async function openCamera(type) {
+  currentCameraType = type;
+  try {
+    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false
+    });
+    document.getElementById('camera-video').srcObject = cameraStream;
+    document.getElementById('camera-modal').classList.add('open');
+  } catch (err) {
+    alert('Camera access denied or not available.');
+  }
+}
+
+async function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  await openCamera(currentCameraType);
+}
+
+function snapPhoto() {
+  const video = document.getElementById('camera-video');
+  if (!video.videoWidth) return;
+  const canvas = document.getElementById('camera-canvas');
+  const scale = Math.min(1, 800 / video.videoWidth);
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  photos[currentCameraType].push({ dataUrl: canvas.toDataURL('image/jpeg', 0.5) });
+  renderPhotos(currentCameraType);
+  closeCamera();
+}
+
+function closeCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  document.getElementById('camera-modal').classList.remove('open');
+}
+
+function renderPhotos(type) {
+  document.getElementById(type + '-grid').innerHTML = photos[type].map((p, i) => `
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}" alt="photo ${i + 1}">
+      <button class="remove-btn" onclick="removePhoto('${type}',${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removePhoto(type, idx) {
+  photos[type].splice(idx, 1);
+  renderPhotos(type);
+}
+
+// ─── DRIVER SUBMIT ────────────────────────────────────────
+async function uploadGroup(type, label, token) {
+  const urls = [];
+  for (let i = 0; i < photos[type].length; i++) {
+    const p = photos[type][i];
+    if (!p.url) {
+      const [meta, base64] = p.dataUrl.split(',');
+      const mimeType = meta.split(';')[0].split(':')[1];
+      const result = await callApi('upload_image', { kind: type, label, base64, mimeType }, token);
+      p.url = result.url; // ako slanje pukne kasnije, ne šaljemo istu sliku ponovo
+    }
+    urls.push(p.url);
+  }
+  return urls;
+}
+
+async function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const driverid = document.getElementById('f-driverid').value.trim();
+  const truck = document.getElementById('f-truck').value.trim();
+  const trailer = document.getElementById('f-trailer').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+
+  if (!name || !driverid || !truck || !trailer) { showStatus('form', 'error', '⚠️ Please fill in all required fields.'); return; }
+  if (name.split(/\s+/).length < 2) { showStatus('form', 'error', '⚠️ Please enter your first and last name.'); return; }
+  if (!/^\d{4}$/.test(driverid)) { showStatus('form', 'error', '⚠️ Driver ID must be exactly 4 digits.'); return; }
+  if (photos.truck.length === 0) { showStatus('form', 'error', '⚠️ Please add at least one truck photo.'); return; }
+  if (photos.trailer.length === 0) { showStatus('form', 'error', '⚠️ Please add at least one trailer photo.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  showStatus('form', 'loading', '<span class="spinner"></span> Verifying driver...');
+
+  try {
+    const verify = await callApi('verify_driver', { name, driverid });
+    if (!verify.valid) {
+      showStatus('form', 'error', '❌ Name and Driver ID do not match. Please check your full name and the last 4 digits of your phone.');
+      btn.disabled = false;
+      return;
+    }
+
+    showStatus('form', 'loading', '<span class="spinner"></span> Uploading photos...');
+    const truckUrls = await uploadGroup('truck', truck, verify.token);
+    const trailerUrls = await uploadGroup('trailer', trailer, verify.token);
+
+    showStatus('form', 'loading', '<span class="spinner"></span> Saving report...');
+    await callApi('append_row', { truck, trailer, notes, truckUrls, trailerUrls }, verify.token);
+
+    showStatus('form', 'success', '✅ Report submitted successfully!');
+    ['f-name', 'f-driverid', 'f-truck', 'f-trailer', 'f-notes'].forEach(id => document.getElementById(id).value = '');
+    photos.truck = []; photos.trailer = [];
+    renderPhotos('truck'); renderPhotos('trailer');
+  } catch (err) {
+    showStatus('form', 'error', '❌ Error: ' + esc(err.message));
+  }
+  btn.disabled = false;
+}
+
+// ─── ADMIN ────────────────────────────────────────────────
+async function adminLogin() {
+  const input = document.getElementById('admin-pass');
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  try {
+    const { token } = await callApi('admin_login', { password: input.value });
+    setAdminToken(token);
+    input.value = '';
+    document.getElementById('login-msg').className = 'status-msg';
+    showPage('admin');
+    loadRecords();
+  } catch (err) {
+    showStatus('login', 'error', '❌ ' + esc(err.message));
+  }
+  btn.disabled = false;
+}
+
+function adminLogout() {
+  setAdminToken(null);
+  allRows = [];
+  document.getElementById('records-list').innerHTML = '';
+  showPage('login');
+}
+
+function handleAuthError(err) {
+  if (err.status === 401) {
+    setAdminToken(null);
+    showPage('login');
+    showStatus('login', 'error', '🔒 Session expired. Please log in again.');
+    return true;
+  }
+  return false;
+}
+
+let allRows = [];
+let currentPage = 1;
+let lightboxSets = {};
+
+function filterAndRender() {
+  const search = document.getElementById('search-input').value.toLowerCase().trim();
+  const perPage = parseInt(document.getElementById('per-page').value, 10);
+
+  const filtered = search ? allRows.filter(row => {
+    const [, name, driverId, truck, trailer] = row.data;
+    return [name, driverId, truck, trailer].some(v => (v || '').toLowerCase().includes(search));
+  }) : allRows;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  if (currentPage > totalPages) currentPage = 1;
+  const start = (currentPage - 1) * perPage;
+
+  renderRows(filtered.slice(start, start + perPage));
+  renderPagination(currentPage, totalPages, filtered.length, perPage);
+}
+
+function renderPagination(page, totalPages, total, perPage) {
+  const top = document.getElementById('pagination-top');
+  const bottom = document.getElementById('pagination-bottom');
+  if (total === 0) { top.innerHTML = ''; bottom.innerHTML = ''; return; }
+  const start = (page - 1) * perPage + 1;
+  const end = Math.min(page * perPage, total);
+  const info = `<span class="page-info">Showing ${start}–${end} of ${total}</span>`;
+  let btns = `<button class="page-btn" onclick="goPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}>‹ Prev</button>`;
+  let startP = Math.max(1, page - 2);
+  const endP = Math.min(totalPages, startP + 4);
+  if (endP - startP < 4) startP = Math.max(1, endP - 4);
+  for (let i = startP; i <= endP; i++) {
+    btns += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  btns += `<button class="page-btn" onclick="goPage(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Next ›</button>`;
+  top.innerHTML = info + btns;
+  bottom.innerHTML = totalPages > 1 ? info + btns : '';
+}
+
+function goPage(p) {
+  currentPage = p;
+  filterAndRender();
+  window.scrollTo(0, document.getElementById('records-list').offsetTop - 20);
+}
+
+function safeImageUrl(u) {
+  return /^https:\/\/res\.cloudinary\.com\//.test(u) ? u : null;
+}
+
+function renderRows(rows) {
+  const list = document.getElementById('records-list');
+  lightboxSets = {};
+  if (!rows.length) { list.innerHTML = '<div class="no-records">📭 No results found.</div>'; return; }
+
+  list.innerHTML = rows.map(row => {
+    const id = row.sheetRow; // broj reda u tabeli – jedinstven
+    const [ts, name, driverId, truck, trailer, truckImgs, trailerImgs, notes, comment] = row.data;
+    const truckUrls = (truckImgs || '').split(' | ').map(safeImageUrl).filter(Boolean);
+    const trailerUrls = (trailerImgs || '').split(' | ').map(safeImageUrl).filter(Boolean);
+
+    const photoSection = (label, urls, key) => {
+      if (!urls.length) return '';
+      lightboxSets[key] = urls;
+      return `
+        <div class="photos-label">📷 ${label} (${urls.length})</div>
+        <div class="photo-strip">
+          ${urls.map((url, i) => `<img src="${esc(url)}" loading="lazy" alt="" onclick="openLightboxSet('${key}', ${i})">`).join('')}
+        </div>`;
+    };
+
+    return `
+      <div class="record-card">
+        <div class="record-header">
+          <div class="record-name">👤 ${esc(name || '—')}</div>
+          <div class="record-time">${esc(ts || '—')}</div>
+        </div>
+        <div class="record-fields">
+          <div class="record-field"><div class="lbl">Driver ID</div><div class="val">🪪 ${esc(driverId || '—')}</div></div>
+          <div class="record-field"><div class="lbl">Truck</div><div class="val">🚛 ${esc(truck || '—')}</div></div>
+          <div class="record-field"><div class="lbl">Trailer</div><div class="val">🚜 ${esc(trailer || '—')}</div></div>
+        </div>
+        ${(truckUrls.length || trailerUrls.length) ? `
+        <div class="record-photos">
+          ${photoSection('Truck', truckUrls, 't' + id)}
+          ${photoSection('Trailer', trailerUrls, 'r' + id)}
+        </div>` : ''}
+        ${notes ? `<div class="driver-notes"><div class="lbl">📝 Driver Notes</div>${esc(notes)}</div>` : ''}
+        <div class="comment-section">
+          <div class="comment-label">💬 Admin Comment</div>
+          <textarea class="comment-box" id="comment-${id}" maxlength="2000" placeholder="Add a comment...">${esc(comment || '')}</textarea>
+          <div>
+            <button class="comment-save-btn" id="save-${id}" onclick="saveComment(${id})">Save</button>
+            <span class="comment-saved" id="saved-${id}">✅ Saved!</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function loadRecords() {
+  const list = document.getElementById('records-list');
+  list.innerHTML = '<div class="no-records">Loading...</div>';
+  try {
+    const data = await callApi('get_rows', {}, getAdminToken());
+    const values = data.values || [];
+    allRows = values.slice(1).map((r, i) => ({ data: r, sheetRow: i + 2 })).filter(r => r.data.length).reverse();
+    currentPage = 1;
+    document.getElementById('stat-total').textContent = allRows.length;
+
+    const todayStr = new Date().toLocaleDateString('en-US', { timeZone: data.timeZone || undefined });
+    document.getElementById('stat-today').textContent =
+      allRows.filter(r => (r.data[0] || '').startsWith(todayStr + ',')).length;
+
+    if (!allRows.length) {
+      list.innerHTML = '<div class="no-records">📭 No reports yet.</div>';
+      renderPagination(1, 1, 0, 10);
+      return;
+    }
+    filterAndRender();
+  } catch (err) {
+    if (handleAuthError(err)) return;
+    list.innerHTML = `<div class="no-records">❌ Error loading data: ${esc(err.message)}</div>`;
+  }
+}
+
+async function saveComment(rowIndex) {
+  const comment = document.getElementById('comment-' + rowIndex).value;
+  const btn = document.getElementById('save-' + rowIndex);
+  const savedEl = document.getElementById('saved-' + rowIndex);
+  btn.disabled = true;
+  try {
+    await callApi('update_comment', { rowIndex, comment }, getAdminToken());
+    const row = allRows.find(r => r.sheetRow === rowIndex);
+    if (row) row.data[8] = comment;
+    savedEl.style.display = 'inline';
+    setTimeout(() => { savedEl.style.display = 'none'; }, 2000);
+  } catch (err) {
+    if (!handleAuthError(err)) alert('Error saving comment: ' + err.message);
+  }
+  btn.disabled = false;
+}
+
+// ─── LIGHTBOX ─────────────────────────────────────────────
+let lightboxUrls = [];
+let lightboxIdx = 0;
+
+function openLightboxSet(key, idx) {
+  lightboxUrls = lightboxSets[key] || [];
+  lightboxIdx = idx;
+  if (!lightboxUrls.length) return;
+  updateLightbox();
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function lightboxNav(dir) {
+  lightboxIdx = Math.max(0, Math.min(lightboxUrls.length - 1, lightboxIdx + dir));
+  updateLightbox();
+}
+
+function updateLightbox() {
+  document.getElementById('lightbox-img').src = lightboxUrls[lightboxIdx];
+  document.getElementById('lightbox-counter').textContent = lightboxUrls.length > 1 ? (lightboxIdx + 1) + ' / ' + lightboxUrls.length : '';
+  document.getElementById('lightbox-prev').style.display = lightboxIdx === 0 ? 'none' : 'flex';
+  document.getElementById('lightbox-next').style.display = lightboxIdx === lightboxUrls.length - 1 ? 'none' : 'flex';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+document.getElementById('lightbox').addEventListener('click', function (e) {
+  if (e.target === this) closeLightbox();
+});
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+});
+
+// ─── PAGES ────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+}
+
+function showStatus(ctx, type, msg) {
+  const el = document.getElementById(ctx === 'form' ? 'status-msg' : 'login-msg');
+  el.className = 'status-msg ' + type;
+  el.innerHTML = msg;
+}
+
+window.addEventListener('load', () => {
+  if (window.location.hash === '#admin') {
+    if (getAdminToken()) { showPage('admin'); loadRecords(); }
+    else showPage('login');
+  } else {
+    showPage('form');
+  }
+});
+</script>
+</body>
+</html>

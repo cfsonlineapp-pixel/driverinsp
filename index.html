@@ -131,7 +131,7 @@
   <div class="form-container">
     <div class="section-label">Driver</div>
     <div class="field">
-      <label for="f-name">Full Name * (first and last name)</label>
+      <label for="f-name">Full Name *</label>
       <input type="text" id="f-name" placeholder="e.g. John Smith" autocomplete="name" maxlength="100">
     </div>
     <div class="field">
@@ -341,7 +341,6 @@ async function submitForm() {
   const notes = document.getElementById('f-notes').value.trim();
 
   if (!name || !driverid || !truck || !trailer) { showStatus('form', 'error', '⚠️ Please fill in all required fields.'); return; }
-  if (name.split(/\s+/).length < 2) { showStatus('form', 'error', '⚠️ Please enter your first and last name.'); return; }
   if (!/^\d{4}$/.test(driverid)) { showStatus('form', 'error', '⚠️ Driver ID must be exactly 4 digits.'); return; }
   if (photos.truck.length === 0) { showStatus('form', 'error', '⚠️ Please add at least one truck photo.'); return; }
   if (photos.trailer.length === 0) { showStatus('form', 'error', '⚠️ Please add at least one trailer photo.'); return; }
@@ -353,7 +352,7 @@ async function submitForm() {
   try {
     const verify = await callApi('verify_driver', { name, driverid });
     if (!verify.valid) {
-      showStatus('form', 'error', '❌ Name and Driver ID do not match. Please check your full name and the last 4 digits of your phone.');
+      showStatus('form', 'error', '❌ Driver ID does not match. Please check your name and last 4 digits of your phone.');
       btn.disabled = false;
       return;
     }

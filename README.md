@@ -28,6 +28,17 @@ Podaci idu u Google tabelu, fotografije na Cloudinary, a sve radi na Netlify-ju.
 Truck Photos · Trailer Photos · **Driver Notes** (H) · **Admin Comment** (I).
 Beleška vozača i komentar admina su sada odvojeni, pa admin više ne briše vozačevu belešku.
 
+**Obavezne fotografije** (kamion i prikolica) su navedene u `index.html`, u objektu `SHOTS`
+(na vrhu dela `CAMERA`). Vozač pritisne „Start truck photos“ / „Start trailer photos“ i snima redom;
+kamera mu za svaku ispiše šta treba da slika. Fotografije se ne mogu preskočiti niti birati
+pojedinačno, a izveštaj ne može da se pošalje dok sve nisu snimljene.
+Za izmenu spiska dovoljno je izmeniti nizove u `SHOTS`.
+
+Na kameri se za svaku fotografiju prikazuje žuta silueta (obris) i kratko uputstvo – nalaze se u
+`index.html`, u nizu `GUIDES`. Silueta se bira po nazivu fotografije (npr. svi nazivi sa „Brakes“
+dobijaju siluetu doboša; leva strana je u ogledalu desne). Linije služe samo kao vodilica i ne ulaze
+u sliku koja se šalje.
+
 ## 2. Google service account (novi ključ)
 
 1. https://console.cloud.google.com → napravi novi projekat.
@@ -104,7 +115,7 @@ ili bilo kojim generatorom lozinki. Ako ga promeniš, svi admini se odjavljuju.
 | `Google Sheets: ... permission` | Tabela nije podeljena sa email-om service account-a kao Editor. |
 | `Google Sheets: Unable to parse range` | Ne postoji list `Sheet1` ili `Drivers` (ili drugačije ime od podešenog). |
 | `Cloudinary: Invalid Signature` | Pogrešan API Secret, ili probaj `CLOUDINARY_SIGNATURE_ALGORITHM = sha1`. |
-| "Name and Driver ID do not match" | Vozač mora uneti **i ime i prezime** kao u listu `Drivers` (velika/mala slova i č/ć/š/ž/đ nisu bitni). |
+| "Name and Driver ID do not match" | Ime ili prezime nije kao u listu `Drivers`, ili ID nije tačan. Dovoljno je ime **ili** prezime (velika/mala slova i č/ć/š/ž/đ nisu bitni), ali ID mora biti tačan. |
 
 ---
 
@@ -115,7 +126,8 @@ ili bilo kojim generatorom lozinki. Ako ga promeniš, svi admini se odjavljuju.
   Bez prijave niko ne može da čita izveštaje ni da menja komentare.
 - Slanje slika i izveštaja radi samo posle uspešne provere vozača (token važi 30 min).
   Ime i ID vozača u izveštaj upisuje server, ne pretraživač.
-- Vozač mora uneti ime **i** prezime (ranije je bila dovoljna jedna reč).
+- Vozaču je i dalje dovoljno ime **ili** prezime + tačan ID; u izveštaj se upisuje puno ime iz lista `Drivers`.
+  Posle neuspele provere server čeka ~1 s, da bi pogađanje ID-a bilo sporije.
 - Sav unos se prikazuje bezbedno (zaštita od ubacivanja koda u admin panel),
   a u tabelu se upisuje kao običan tekst (ne može se ubaciti formula).
 - Beleška vozača i komentar admina su u odvojenim kolonama.

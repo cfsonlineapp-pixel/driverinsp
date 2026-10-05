@@ -33,7 +33,7 @@ const HEADER = ['Date & Time', 'Full Name', 'Driver ID', 'Truck Number', 'Traile
 
 const DRIVER_TOKEN_TTL = 30 * 60;       // 30 min za popunjavanje i slanje izveštaja
 const ADMIN_TOKEN_TTL = 12 * 60 * 60;   // 12 h admin sesija
-const MAX_PHOTOS_PER_GROUP = 20;
+const MAX_PHOTOS_PER_GROUP = 60;
 const MAX_IMAGE_BASE64 = 5_500_000;     // ~4 MB slika (Netlify limit za zahtev je 6 MB)
 
 class HttpError extends Error {
@@ -192,7 +192,10 @@ const actions = {
       const sheetWords = normalizeName(row[0]);
       return String(row[1]).trim() === driverid && nameWords.some(w => sheetWords.includes(w));
     });
-    if (!match) return { valid: false };
+    if (!match) {
+      await new Promise(r => setTimeout(r, 800)); // usporava pogađanje ID-a
+      return { valid: false };
+    }
 
     const officialName = String(match[0]).trim();
     return { valid: true, officialName, token: signToken({ type: 'driver', name: officialName, driverid }, DRIVER_TOKEN_TTL) };
@@ -206,8 +209,11 @@ const actions = {
     if (typeof data.base64 !== 'string' || !data.base64 || data.base64.length > MAX_IMAGE_BASE64 ||
         !/^[A-Za-z0-9+/=]+$/.test(data.base64)) throw new HttpError(400, 'Neispravna ili prevelika slika.');
 
-    const label = String(data.label || '').replace(/[^A-Za-z0-9-]/g, '-').slice(0, 40) || 'unit';
-    const publicId = `${kind}_${label}_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const clean = v => String(v || '').replace(/[^A-Za-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 40);
+    const label = clean(data.label) || 'unit';
+    const shot = clean(data.shot); // npr. "LR-Tires" – admin panel ga prikazuje ispod slike
+    const rand = `${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const publicId = shot ? `${kind}__${shot}__${label}__${rand}` : `${kind}_${label}_${rand}`;
     return { url: await uploadToCloudinary(data.base64, mimeType, publicId) };
   },
 

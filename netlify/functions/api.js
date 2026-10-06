@@ -28,7 +28,7 @@ const cfg = {
   timeZone: () => env('APP_TIMEZONE', 'America/Chicago'),
 };
 
-const HEADER = ['Date & Time', 'Full Name', 'Driver ID', 'Truck Number', 'Trailer Number',
+const HEADER = ['Date', 'Full Name', 'Driver ID', 'Truck Number', 'Trailer Number',
   'Truck Photos', 'Trailer Photos', 'Driver Notes', 'Admin Comment'];
 
 const DRIVER_TOKEN_TTL = 30 * 60;       // 30 min za popunjavanje i slanje izveštaja
@@ -232,7 +232,8 @@ const actions = {
     const truckPhotos = checkUrls(data.truckUrls, 'truck');
     const trailerPhotos = checkUrls(data.trailerUrls, 'trailer');
 
-    const ts = new Date().toLocaleString('en-US', { timeZone: cfg.timeZone() });
+    // samo datum, bez vremena (npr. 10/6/2026)
+    const ts = new Date().toLocaleDateString('en-US', { timeZone: cfg.timeZone() });
 
     await ensureHeader();
     // RAW: unos vozača se nikad ne tumači kao formula

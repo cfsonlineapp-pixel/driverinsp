@@ -723,7 +723,7 @@ function renderRows(rows) {
       <div class="record-card">
         <div class="record-header">
           <div class="record-name">👤 ${esc(name || '—')}</div>
-          <div class="record-time">${esc(ts || '—')}</div>
+          <div class="record-time">${esc((ts || '—').split(',')[0])}</div>
         </div>
         <div class="record-fields">
           <div class="record-field"><div class="lbl">Driver ID</div><div class="val">🪪 ${esc(driverId || '—')}</div></div>
@@ -760,7 +760,7 @@ async function loadRecords() {
 
     const todayStr = new Date().toLocaleDateString('en-US', { timeZone: data.timeZone || undefined });
     document.getElementById('stat-today').textContent =
-      allRows.filter(r => (r.data[0] || '').startsWith(todayStr + ',')).length;
+      allRows.filter(r => (r.data[0] || '').split(',')[0].trim() === todayStr).length;
 
     if (!allRows.length) {
       list.innerHTML = '<div class="no-records">📭 No reports yet.</div>';

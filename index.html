@@ -125,6 +125,25 @@
   .cam-flip-btn { right: 16px; }
   .cam-snap-btn { position: absolute; left: 50%; bottom: calc(36px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--yellow); color: var(--black); border: none; font-size: 18px; font-weight: 700; padding: 20px 52px; border-radius: 50px; cursor: pointer; z-index: 10; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,.6); }
   .cam-snap-btn:active { opacity: .85; }
+  .cam-rotate { display: none; position: absolute; inset: 0; z-index: 8; background: rgba(0,0,0,.78); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 24px; }
+  .cam-rotate .icon { font-size: 64px; color: var(--yellow); animation: rot 1.6s ease-in-out infinite; }
+  .cam-rotate .msg { font-size: 22px; font-weight: 700; }
+  @keyframes rot { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  /* fotografija traži vodoravan telefon, a telefon je uspravan */
+  @media (orientation: portrait) {
+    .camera-modal.need-landscape .cam-rotate { display: flex; }
+    .camera-modal.need-landscape .cam-guide { display: none; }
+    .camera-modal.need-landscape .cam-snap-btn { opacity: .35; pointer-events: none; }
+  }
+  /* telefon vodoravno: natpis gore, dugme desno, silueta preko ostatka ekrana */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .cam-cancel-btn, .cam-flip-btn { top: 10px; padding: 8px 16px; font-size: 14px; }
+    .cam-banner { top: 10px; left: 130px; right: 130px; padding: 6px 12px; }
+    .cam-banner .what { font-size: 17px; margin-top: 2px; }
+    .cam-banner .tip { font-size: 12px; margin-top: 2px; }
+    .cam-guide { top: 92px; bottom: 12px; left: calc(16px + env(safe-area-inset-left)); right: calc(150px + env(safe-area-inset-right)); }
+    .cam-snap-btn { left: auto; right: calc(16px + env(safe-area-inset-right)); top: 50%; bottom: auto; transform: translateY(-50%); padding: 18px 20px; font-size: 16px; }
+  }
   .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .lightbox.open { display: flex; }
   .lightbox img { max-width: 90%; max-height: 85vh; border-radius: 8px; }
@@ -244,6 +263,7 @@
       <div class="tip" id="cam-tip"></div>
     </div>
     <div class="cam-guide" id="cam-guide"></div>
+    <div class="cam-rotate"><div class="icon">📱</div><div class="msg">Turn your phone sideways</div><div>This photo must be taken horizontally</div></div>
     <button class="cam-snap-btn" onclick="snapPhoto()">📷 Capture</button>
   </div>
 </div>
@@ -364,15 +384,15 @@ function startShots(type) {
 // Vodilice na kameri – obris i kratko uputstvo, biraju se po nazivu fotografije
 const CORNERS = '<path class="g" d="M2 18V2h16M82 2h16v16M98 82v16H82M18 98H2V82"/>';
 const GUIDES = [
-  { match: 'windshield', vb: '4 24 250 120', tip: 'From the driver seat – whole windshield inside the outline',
+  { match: 'windshield', landscape: true, vb: '4 24 250 120', tip: 'From the driver seat – whole windshield inside the outline',
     svg: '<path class="g" d="M13 35 Q20 30 32 35 C70 50 100 60 132 64 L240 64 Q248 64 245 71 L229 111 Q226 118 218 118 L140 118 C110 120 76 129 52 135 Q41 138 37 130 L14 47 Q10 39 13 35 Z"/>' },
   { match: 'left side of truck', vb: '0 0 150 100', tip: 'Step back – whole truck inside the outline, lights on',
     svg: '<path class="g" d="M3 88 L1 66 Q2 55 10 52 L43 45 L60 17 Q62 13 68 13 L84 12 C100 6 118 2 134 2 L137 60 L146 62 L146 90 L47 90 L47 88 C47 61 3 61 3 88 Z"/>' },
   { match: 'right side of truck', vb: '0 0 150 100', tip: 'Step back – whole truck inside the outline, lights on',
     svg: '<g transform="translate(150 0) scale(-1 1)"><path class="g" d="M3 88 L1 66 Q2 55 10 52 L43 45 L60 17 Q62 13 68 13 L84 12 C100 6 118 2 134 2 L137 60 L146 62 L146 90 L47 90 L47 88 C47 61 3 61 3 88 Z"/></g>' },
-  { match: 'right side trailer', vb: '-2 20 259 105', tip: 'Step back – whole trailer inside the outline, lights on',
+  { match: 'right side trailer', landscape: true, vb: '-2 20 259 105', tip: 'Step back – whole trailer inside the outline, lights on',
     svg: '<path class="g" d="M3 27 L251 48 L251 97 L4 95 Z"/><circle class="g" cx="26" cy="107" r="11"/><circle class="g" cx="51" cy="107" r="11"/><path class="g" d="M193 98 L193 114 Q193 119 197 119 Q201 119 201 114 L201 98"/>' },
-  { match: 'left side trailer', vb: '-2 20 259 105', tip: 'Step back – whole trailer inside the outline, lights on',
+  { match: 'left side trailer', landscape: true, vb: '-2 20 259 105', tip: 'Step back – whole trailer inside the outline, lights on',
     svg: '<g transform="translate(255 0) scale(-1 1)"><path class="g" d="M3 27 L251 48 L251 97 L4 95 Z"/><circle class="g" cx="26" cy="107" r="11"/><circle class="g" cx="51" cy="107" r="11"/><path class="g" d="M193 98 L193 114 Q193 119 197 119 Q201 119 201 114 L201 98"/></g>' },
   { match: 'front side trailer', vb: '132 8 286 386', tip: 'Whole front wall inside the outline, lights on',
     svg: '<path class="g" d="M142 17 L403 45 L407 374 L150 384 Z"/><path class="g thin" d="M158 44 L392 67 L392 352 L163 356 Z"/>' },
@@ -384,7 +404,7 @@ const GUIDES = [
     svg: '<path class="g" d="M29 28 L113 45 Q117 46 117 50 L117 144 L66 144 L66 157 L32 158 Q29 158 29 155 Z"/><path class="g" d="M66 148 L117 148 L130 161 L100 180 Z"/><path class="g thin" d="M78 156 L114 156 L120 162 L101 173 Z"/>' },
   { match: 'rear side', tip: 'Step back – whole rear in the frame, lights on',
     svg: '<rect class="g" x="14" y="8" width="72" height="84" rx="6"/><circle class="g thin" cx="26" cy="76" r="5"/><circle class="g thin" cx="74" cy="76" r="5"/>' },
-  { match: 'bumper', vb: '0 40 129 60', tip: 'Whole bumper and both lights inside the outline, lights on',
+  { match: 'bumper', landscape: true, vb: '0 40 129 60', tip: 'Whole bumper and both lights inside the outline, lights on',
     svg: '<path class="g" d="M6.0 47.0 L123.0 53.0 L123.0 66.0 L7.0 59.0 Z"/><path class="g" d="M6.0 79.0 L123.0 83.0 L123.0 94.0 L7.0 86.0 Z"/><path class="g" d="M36.0 60.8 L43.0 61.2 L42.3 80.2 L35.2 80.0 Z"/><path class="g" d="M90.5 64.0 L98.6 64.5 L98.4 82.2 L90.2 81.9 Z"/><circle class="g thin" cx="16" cy="53.5" r="3.6"/><circle class="g thin" cx="27" cy="54.1" r="3.6"/><circle class="g thin" cx="104" cy="58.4" r="3.6"/><circle class="g thin" cx="116" cy="59.1" r="3.6"/>' },
   { match: 'side', tip: 'Step back – whole side and unit number in the frame, lights on',
     svg: '<rect class="g" x="0" y="26" width="100" height="44" rx="4"/><circle class="g thin" cx="18" cy="74" r="9"/><circle class="g thin" cx="82" cy="74" r="9"/>' },
@@ -424,7 +444,10 @@ function updateCameraBanner(note) {
   document.getElementById('cam-tip').textContent = guide.tip;
   document.getElementById('cam-guide').innerHTML =
     `<svg viewBox="${guide.vb || '0 0 100 100'}" preserveAspectRatio="xMidYMid meet">${guide.svg}</svg>`;
+  document.getElementById('camera-modal').classList.toggle('need-landscape', !!guide.landscape);
 }
+
+const isPortrait = () => window.matchMedia('(orientation: portrait)').matches;
 
 async function openCamera() {
   try {
@@ -455,8 +478,10 @@ function advanceShot(note) {
 function snapPhoto() {
   const video = document.getElementById('camera-video');
   if (!video.videoWidth || !shotQueue.length) return;
+  if (guideFor(currentSlot().name).landscape && isPortrait()) return; // mora vodoravno
   const canvas = document.getElementById('camera-canvas');
-  const scale = Math.min(1, 800 / video.videoWidth);
+  // kraća stranica najviše 800 px – ista oštrina uspravno i vodoravno
+  const scale = Math.min(1, 800 / Math.min(video.videoWidth, video.videoHeight));
   canvas.width = Math.round(video.videoWidth * scale);
   canvas.height = Math.round(video.videoHeight * scale);
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -471,6 +496,7 @@ function snapPhoto() {
 function closeCamera() {
   if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
   document.getElementById('camera-modal').classList.remove('open');
+  document.getElementById('camera-modal').classList.remove('need-landscape');
   shotQueue = [];
 }
 

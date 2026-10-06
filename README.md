@@ -24,7 +24,7 @@ Podaci idu u Google tabelu, fotografije na Cloudinary, a sve radi na Netlify-ju.
 3. ID tabele je deo linka između `/d/` i `/edit`:
    `https://docs.google.com/spreadsheets/d/`**`OVO_JE_ID`**`/edit`
 
-**Kolone u `Sheet1`:** Date & Time · Full Name · Driver ID · Truck Number · Trailer Number ·
+**Kolone u `Sheet1`:** Date (samo datum, bez vremena) · Full Name · Driver ID · Truck Number · Trailer Number ·
 Truck Photos · Trailer Photos · **Driver Notes** (H) · **Admin Comment** (I).
 Beleška vozača i komentar admina su sada odvojeni, pa admin više ne briše vozačevu belešku.
 

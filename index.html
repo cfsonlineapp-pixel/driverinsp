@@ -146,12 +146,22 @@
   }
   .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .lightbox.open { display: flex; }
-  .lightbox img { max-width: 90%; max-height: 85vh; border-radius: 8px; }
+  .lightbox img { max-width: 90%; max-height: 85vh; border-radius: 8px; position: relative; z-index: 1; touch-action: none; user-select: none; -webkit-user-drag: none; transition: transform .15s ease-out; }
+  .lightbox img.dragging { transition: none; }
+  .lightbox img.zoomed { cursor: grab; }
+  .lightbox img.zoomed.dragging { cursor: grabbing; }
+  .lightbox-close, .lightbox-nav, #lightbox-counter, .lb-zoom { z-index: 2; }
+  .lb-zoom { position: absolute; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .lb-zoom button { width: 52px; height: 52px; border-radius: 50%; border: none; font-size: 30px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  #lb-zoom-in { background: var(--yellow); color: var(--black); }
+  #lb-zoom-out { background: rgba(0,0,0,.6); color: white; border: 2px solid rgba(255,255,255,.5); }
+  #lb-zoom-out:disabled { opacity: .3; cursor: default; }
+  #lb-zoom-level { color: white; font-size: 13px; background: rgba(0,0,0,.5); padding: 4px 10px; border-radius: 20px; min-width: 44px; text-align: center; }
   .lightbox-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: white; font-size: 30px; cursor: pointer; }
   .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.6); border: none; color: white; font-size: 32px; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   #lightbox-prev { left: 16px; }
   #lightbox-next { right: 16px; }
-  #lightbox-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; background: rgba(0,0,0,.5); padding: 4px 12px; border-radius: 20px; }
+  #lightbox-counter { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; background: rgba(0,0,0,.5); padding: 4px 12px; border-radius: 20px; }
   .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(0,0,0,.3); border-top-color: var(--black); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -274,6 +284,11 @@
   <img id="lightbox-img" src="" alt="">
   <button class="lightbox-nav" id="lightbox-next" onclick="lightboxNav(1)">›</button>
   <div id="lightbox-counter"></div>
+  <div class="lb-zoom">
+    <span id="lb-zoom-level">1×</span>
+    <button id="lb-zoom-out" onclick="lbZoomBy(-1)" aria-label="Zoom out">−</button>
+    <button id="lb-zoom-in" onclick="lbZoomBy(1)" aria-label="Zoom in">+</button>
+  </div>
 </div>
 
 <script>
@@ -796,11 +811,90 @@ function lightboxNav(dir) {
 function updateLightbox() {
   const item = lightboxUrls[lightboxIdx];
   document.getElementById('lightbox-img').src = item.url;
+  lbResetZoom();
   const counter = lightboxUrls.length > 1 ? (lightboxIdx + 1) + ' / ' + lightboxUrls.length : '';
   document.getElementById('lightbox-counter').textContent = [counter, item.cap].filter(Boolean).join(' · ');
   document.getElementById('lightbox-prev').style.display = lightboxIdx === 0 ? 'none' : 'flex';
   document.getElementById('lightbox-next').style.display = lightboxIdx === lightboxUrls.length - 1 ? 'none' : 'flex';
 }
+
+// ─── ZOOM U LIGHTBOX-u ───
+// "+" / "−" dugmad, točkić miša, dva prsta (pinch) i dupli dodir; uvećana slika se pomera prevlačenjem.
+const LB_ZOOM_STEPS = [1, 1.5, 2, 3, 4];
+let lbZ = 1, lbX = 0, lbY = 0;
+
+function lbApply() {
+  const img = document.getElementById('lightbox-img');
+  // ne dozvoli da slika ode van ekrana
+  const maxX = img.clientWidth * (lbZ - 1) / 2, maxY = img.clientHeight * (lbZ - 1) / 2;
+  lbX = Math.max(-maxX, Math.min(maxX, lbX));
+  lbY = Math.max(-maxY, Math.min(maxY, lbY));
+  img.style.transform = `translate(${lbX}px, ${lbY}px) scale(${lbZ})`;
+  img.classList.toggle('zoomed', lbZ > 1);
+  document.getElementById('lb-zoom-level').textContent = (Math.round(lbZ * 10) / 10) + '×';
+  document.getElementById('lb-zoom-out').disabled = lbZ <= 1;
+  document.getElementById('lb-zoom-in').disabled = lbZ >= LB_ZOOM_STEPS[LB_ZOOM_STEPS.length - 1];
+}
+
+function lbSetZoom(z) {
+  const max = LB_ZOOM_STEPS[LB_ZOOM_STEPS.length - 1];
+  const old = lbZ;
+  lbZ = Math.max(1, Math.min(max, z));
+  lbX *= lbZ / old; lbY *= lbZ / old;   // zadrži isti deo slike u sredini
+  if (lbZ === 1) { lbX = 0; lbY = 0; }
+  lbApply();
+}
+
+function lbZoomBy(dir) {
+  const next = dir > 0 ? LB_ZOOM_STEPS.find(s => s > lbZ + 0.01) : [...LB_ZOOM_STEPS].reverse().find(s => s < lbZ - 0.01);
+  lbSetZoom(next ?? lbZ);
+}
+
+function lbResetZoom() { lbZ = 1; lbX = 0; lbY = 0; lbApply(); }
+
+(function initLightboxZoom() {
+  const img = document.getElementById('lightbox-img');
+  const pts = new Map();
+  let start = null;
+
+  img.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    img.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const [a, b] = [...pts.values()];
+    start = { x: lbX, y: lbY, z: lbZ, px: e.clientX, py: e.clientY, dist: b ? Math.hypot(a.x - b.x, a.y - b.y) : 0 };
+    img.classList.add('dragging');
+  });
+  img.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId) || !start) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const [a, b] = [...pts.values()];
+    if (b && start.dist) {                      // dva prsta – zum
+      lbZ = Math.max(1, Math.min(4, start.z * Math.hypot(a.x - b.x, a.y - b.y) / start.dist));
+      if (lbZ === 1) { lbX = 0; lbY = 0; }
+    } else if (lbZ > 1) {                       // jedan prst / miš – pomeranje
+      lbX = start.x + (e.clientX - start.px);
+      lbY = start.y + (e.clientY - start.py);
+    }
+    lbApply();
+  });
+  const end = e => {
+    pts.delete(e.pointerId);
+    if (!pts.size) { start = null; img.classList.remove('dragging'); }
+    else { const [a] = [...pts.values()]; start = { x: lbX, y: lbY, z: lbZ, px: a.x, py: a.y, dist: 0 }; }
+  };
+  img.addEventListener('pointerup', end);
+  img.addEventListener('pointercancel', end);
+
+  // dupli dodir / dupli klik: 2× ili nazad na 1×
+  img.addEventListener('dblclick', () => lbSetZoom(lbZ > 1 ? 1 : 2));
+
+  // točkić miša
+  document.getElementById('lightbox').addEventListener('wheel', e => {
+    e.preventDefault();
+    lbSetZoom(lbZ * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
+  }, { passive: false });
+})();
 
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
@@ -815,6 +909,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeLightbox();
   if (e.key === 'ArrowLeft') lightboxNav(-1);
   if (e.key === 'ArrowRight') lightboxNav(1);
+  if (e.key === '+' || e.key === '=') lbZoomBy(1);
+  if (e.key === '-') lbZoomBy(-1);
 });
 
 // ─── PAGES ────────────────────────────────────────────────
